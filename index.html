@@ -1,12 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
-</html>
-Hola
+<?php
+require_once "../utils/conexion.php";
+header('Content-Type: application/json');
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    obtenerTurismo();
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['actividad'])) {
+    insertarActividad();
+} else {
+    http_response_code(404);
+    exit();
+}
+
+function obtenerTurismo()
+{
+    global $conn;
+    $result = $conn->query("SELECT actividad, nombre, precio, duracion, disponibilidad FROM turismo;");
+    $turismo = [];
+    while ($fila = $result->fetch_assoc()) {
+        $turismo[] = $fila;
+    }
+    echo json_encode($turismo);
+}
+
+function insertarActividad()
+{
+    global $conn;
+
+    // Verifica si los campos obligatorios están presentes
+    $camposObligatorios = array('idactividad', 'nombre', 'precio');
+    foreach ($camposObligatorios as $campo) {
+        if (!isset($_POST[$campo])) {
+            http_response_code(400);
+            echo json_encode(array('mensaje' => 'Faltan campos obligatorios.'));
+            exit();
+        }
+    }
+
+    // Obtiene los datos de la actividad a insertar
+    $idactividad = $_POST['idactividad'];
+    $nombre = $_POST['nombre'];
+    $precio = $_POST['precio'];
+
+    // Realiza la inserción en la base de datos
+    $query = "INSERT INTO turismo (idactividad, nombre, precio) VALUES ('$idactividad', '$nombre', '$precio')";
+    if ($conn->query($query) === TRUE) {
+        http_response_code(201);
+        echo json_encode(array('mensaje' => 'Actividad insertada correctamente.'));
+    } else {
+        http_response_code(500);
+        echo json_encode(array('mensaje' => 'Error al insertar la actividad: ' . $conn->error));
+    }
+}
+?>
